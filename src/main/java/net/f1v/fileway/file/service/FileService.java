@@ -14,10 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.crypto.NoSuchPaddingException;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -42,11 +39,13 @@ public class FileService {
     public String saveFile(MultipartFile file) {
         UUID uuid = UUID.randomUUID();
         Path filePath = Paths.get(DATA_PATH + uuid + ".enc");
+        HashFile hashFile;
+
 
         try (InputStream inputStream = file.getInputStream();
              OutputStream outputStream = Files.newOutputStream(filePath, StandardOpenOption.CREATE_NEW)) {
 
-            HashFile hashFile = fileEncrypterDecrypter.encrypt(inputStream, outputStream);
+             hashFile = fileEncrypterDecrypter.encrypt(inputStream, outputStream);
 
         } catch (IOException | InvalidKeyException | NoSuchPaddingException |
                  NoSuchAlgorithmException | InvalidAlgorithmParameterException e) {
@@ -63,6 +62,7 @@ public class FileService {
         File fileEntity = new File(
                 file.getSize(),
                 uuid + ".enc",
+                hashFile.hashFileHex(),
                 LocalDateTime.now(),
                 file.getOriginalFilename(),
                 fileLink
@@ -76,13 +76,14 @@ public class FileService {
     public void streamFile(HttpServletResponse response, UUID fileLinkId) {
         FileLink fileLink = fileLinkRepository.findById(fileLinkId).orElseThrow(() -> new RuntimeException(fileLinkId + " not found"));
 
-
         Path filePath = Paths.get(DATA_PATH + fileLink.getFile().getStorageName());
+
 
         response.setHeader("Content-Disposition", "attachment; filename="+fileLink.getFile().getOriginalName());
 
+        HashFile hashFile = new HashFile(fileLink.getFile().getFileHash());
         try (FileInputStream inputStream = new FileInputStream(filePath.toFile())) {
-            fileEncrypterDecrypter.decrypt(response.getOutputStream(), inputStream);
+            fileEncrypterDecrypter.decrypt(response.getOutputStream(), inputStream, hashFile);
         } catch (Exception e) {
             throw new RuntimeException("Error streaming file", e);
         }

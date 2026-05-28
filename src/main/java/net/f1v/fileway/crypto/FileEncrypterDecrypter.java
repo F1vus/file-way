@@ -1,5 +1,6 @@
 package net.f1v.fileway.crypto;
 
+import lombok.extern.slf4j.Slf4j;
 import net.f1v.fileway.crypto.model.HashFile;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +14,7 @@ import java.security.*;
 import java.util.HexFormat;
 
 
+@Slf4j
 @Component
 public class FileEncrypterDecrypter {
     private static final String ALGORITHM = "AES";
@@ -40,7 +42,7 @@ public class FileEncrypterDecrypter {
 
         outputStream.write(iv);
 
-        try (CipherOutputStream cipherOut = new CipherOutputStream(outputStream, cipher)) {
+        try (final CipherOutputStream cipherOut = new CipherOutputStream(outputStream, cipher)) {
             byte[] buffer = new byte[8192];
             int bytesRead;
             while ((bytesRead = inputStream.read(buffer)) != -1) {
@@ -53,7 +55,7 @@ public class FileEncrypterDecrypter {
         return new HashFile(HexFormat.of().formatHex(encodedHash));
     }
 
-    public void decrypt(OutputStream outputStream, FileInputStream fileIn) throws Exception {
+    public void decrypt(OutputStream outputStream, FileInputStream fileIn, HashFile hashFile) throws Exception {
         byte[] iv = fileIn.readNBytes(GCM_IV_LENGTH);
         if (iv.length != GCM_IV_LENGTH) {
             throw new IOException("Cannot read IV");
@@ -63,12 +65,32 @@ public class FileEncrypterDecrypter {
         GCMParameterSpec spec = new GCMParameterSpec(GCM_TAG_LENGTH, iv);
         cipher.init(Cipher.DECRYPT_MODE, secretKey, spec);
 
-        try (CipherInputStream cipherIn = new CipherInputStream(fileIn, cipher)) {
-            byte[] buffer = new byte[8192];
-            int bytesRead;
-            while ((bytesRead = cipherIn.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, bytesRead);
+        MessageDigest digest = MessageDigest.getInstance("SHA3-256");
+
+        Path tempFile = Files.createTempFile("decrypt-", ".tmp");
+        try {
+            try (CipherInputStream cipherIn = new CipherInputStream(fileIn, cipher);
+                 DigestOutputStream digestOut = new DigestOutputStream(
+                         Files.newOutputStream(tempFile), digest)) {
+                byte[] chunk = new byte[8192];
+                int bytesRead;
+                while ((bytesRead = cipherIn.read(chunk)) != -1) {
+                    digestOut.write(chunk, 0, bytesRead);
+                }
             }
+
+            String actualHashHex = HexFormat.of().formatHex(digest.digest());
+
+            log.info("Decrypted hash file: {}",actualHashHex);
+            log.info("Database hash file: {}", hashFile.hashFileHex());
+
+            if (!actualHashHex.equalsIgnoreCase(hashFile.hashFileHex())) {
+                throw new IOException("Invalid hash");
+            }
+
+            Files.copy(tempFile, outputStream);
+        } finally {
+            Files.deleteIfExists(tempFile);
         }
     }
 
