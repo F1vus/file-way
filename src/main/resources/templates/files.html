@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <link rel="stylesheet" th:href="@{/css/index.css}">
+    <title>My Files - FileWay</title>
+    <style>
+        .files-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+        }
+
+        .page-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: #f3f4f6;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .user-info__avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: white;
+        }
+
+        .user-info__details {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .user-info__email {
+            color: #f3f4f6;
+            font-weight: 600;
+        }
+
+        .user-info__role {
+            font-size: 0.9rem;
+            color: #9ca3af;
+        }
+
+        .user-info__role.premium {
+            color: #c4b5fd;
+            font-weight: 600;
+        }
+
+        .files-section {
+            margin-top: 3rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section-header h2 {
+            font-size: 1.5rem;
+            color: #f3f4f6;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.7rem 1.2rem;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            color: #d1d5db;
+            cursor: pointer;
+            text-decoration: none;
+            transition: 0.2s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 2rem;
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .empty-state__icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state h3 {
+            font-size: 1.3rem;
+            color: #f3f4f6;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state p {
+            color: #9ca3af;
+            margin-bottom: 1.5rem;
+        }
+
+        .files-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .file-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: 0.2s ease;
+        }
+
+        .file-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .file-card__header {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .file-card__icon {
+            font-size: 2rem;
+        }
+
+        .file-card__title {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .file-card__name {
+            color: #f3f4f6;
+            font-weight: 600;
+            word-break: break-word;
+            margin-bottom: 0.3rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .file-card__size {
+            color: #9ca3af;
+            font-size: 0.85rem;
+        }
+
+        .file-card__info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding: 1rem 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .file-card__info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .file-card__info-label {
+            color: #9ca3af;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .file-card__info-value {
+            color: #f3f4f6;
+            font-weight: 600;
+        }
+
+        .file-card__info-value.expired {
+            color: #fca5a5;
+        }
+
+        .file-card__info-value.active {
+            color: #86efac;
+        }
+
+        .file-card__link {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .file-card__link-label {
+            color: #9ca3af;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .link-input-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .link-input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 0.6rem;
+            color: #d1d5db;
+            font-size: 0.85rem;
+            word-break: break-all;
+            cursor: pointer;
+            transition: 0.2s ease;
+        }
+
+        .link-input:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .copy-btn {
+            padding: 0.6rem 1rem;
+            background: #2563eb;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .copy-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .copy-btn.copied {
+            background: #16a34a;
+        }
+
+        @media (max-width: 768px) {
+            .files-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .file-card__info {
+                grid-template-columns: 1fr;
+            }
+
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .page-header h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<header class="topbar">
+    <div class="brand">
+        <div class="brand__logo">F</div>
+        <div>
+            <div class="brand__name">Fileway</div>
+            <div class="brand__tagline">Secure file sharing made simple</div>
+        </div>
+    </div>
+
+    <nav class="topbar__nav">
+        <a href="/">Upload</a>
+        <a href="/my-files">My Files</a>
+        <a href="/logout">Logout</a>
+        <span th:if="${isPremium}" class="user-status premium">Premium - <span th:text="${user.email}"></span></span>
+        <span th:unless="${isPremium}" class="user-status">User - <span th:text="${user.email}"></span></span>
+    </nav>
+</header>
+
+<div class="files-container">
+    <div class="page-header">
+        <h1>My Files</h1>
+        <div class="user-info">
+            <div class="user-info__avatar" th:text="${user.email.charAt(0).toUpperCase()}"></div>
+            <div class="user-info__details">
+                <div class="user-info__email" th:text="${user.email}"></div>
+                <div class="user-info__role" th:class="${isPremium ? 'user-info__role premium' : 'user-info__role'}">
+                    <span th:if="${isPremium}">Premium Member</span>
+                    <span th:unless="${isPremium}">Free Member</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="files-section">
+        <div class="section-header">
+            <h2>Your Uploads</h2>
+            <a href="/" class="back-btn">← Back to Upload</a>
+        </div>
+
+        <div th:if="${#lists.isEmpty(user.userFiles)}" class="empty-state">
+            <div class="empty-state__icon">📁</div>
+            <h3>No files yet</h3>
+            <p>Start uploading files to see them here</p>
+            <a href="/" class="btn btn--primary">Upload Your First File</a>
+        </div>
+
+        <div th:unless="${#lists.isEmpty(user.userFiles)}" class="files-grid">
+            <div th:each="file : ${user.userFiles}" class="file-card">
+                <div class="file-card__header">
+                    <div class="file-card__icon">📄</div>
+                    <div class="file-card__title">
+                        <div class="file-card__name" th:text="${file.originalName}"></div>
+                        <div class="file-card__size" th:text="${#numbers.formatDecimal(file.size / 1024 / 1024, 0, 2)} + ' MB'"></div>
+                    </div>
+                </div>
+
+                <div class="file-card__info">
+                    <div class="file-card__info-item">
+                        <span class="file-card__info-label">Uploaded</span>
+                        <span class="file-card__info-value" th:text="${#dates.format(file.createdAt, 'dd.MM.yyyy HH:mm')}"></span>
+                    </div>
+                    <div class="file-card__info-item">
+                        <span class="file-card__info-label">Status</span>
+                        <span class="file-card__info-value" 
+                              th:class="${file.link.expiresAt > #dates.createNow() ? 'file-card__info-value active' : 'file-card__info-value expired'}"
+                              th:text="${file.link.expiresAt > #dates.createNow() ? 'Active' : 'Expired'}"></span>
+                    </div>
+                    <div class="file-card__info-item">
+                        <span class="file-card__info-label">Expires</span>
+                        <span class="file-card__info-value" th:text="${#dates.format(file.link.expiresAt, 'dd.MM.yyyy HH:mm')}"></span>
+                    </div>
+                    <div class="file-card__info-item">
+                        <span class="file-card__info-label">Downloads</span>
+                        <span class="file-card__info-value" th:text="${file.link.useCount} + ' / ' + ${file.link.maxUses}"></span>
+                    </div>
+                </div>
+
+                <div class="file-card__link">
+                    <label class="file-card__link-label">Share Link</label>
+                    <div class="link-input-group">
+                        <input type="text" class="link-input" th:value="${'http://localhost:8080/download-stream/' + file.link.id}" readonly onclick="this.select()" />
+                        <button class="copy-btn" 
+                                th:data-link="${'http://localhost:8080/download-stream/' + file.link.id}"
+                                onclick="copyToClipboard(this)">Copy</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function copyToClipboard(btn) {
+        const link = btn.getAttribute('data-link');
+        navigator.clipboard.writeText(link).then(() => {
+            const originalText = btn.textContent;
+            btn.textContent = 'Copied!';
+            btn.classList.add('copied');
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.classList.remove('copied');
+            }, 2000);
+        }).catch(() => {
+            alert('Failed to copy link');
+        });
+    }
+</script>
+</body>
+</html>

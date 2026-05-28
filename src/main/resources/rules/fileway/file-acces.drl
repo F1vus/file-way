@@ -1,0 +1,95 @@
+package rules.fileway;
+
+import net.f1v.fileway.auth.UserDetailsImpl;
+import net.f1v.fileway.user.entity.UserRole;
+import org.springframework.web.multipart.MultipartFile
+import net.f1v.fileway.file.error.FileUploadException;
+global org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes;
+global net.f1v.fileway.file.service.FileService fileService;
+global org.slf4j.Logger logger;
+
+
+rule "Guest user max size 512MB - rejected"
+    dialect "java"
+    when
+        not UserDetailsImpl()
+        $m : MultipartFile(size > 512000000)
+    then
+        redirectAttributes.addFlashAttribute("errorMessage", "The file is too large! Your max limit is 512MB. Please create account, if you want to send larger files.");
+
+        logger.warn("Guest file was rejected! File size: {}MB", $m.getSize()/1000000);
+end
+
+rule "Guest user max size 512MB - approve"
+    dialect "java"
+    when
+        not UserDetailsImpl()
+        $m : MultipartFile(size <= 512000000)
+    then
+         try {
+            String link = fileService.saveFile($m);
+
+             redirectAttributes.addFlashAttribute("successMessage", "File uploaded successfully");
+             redirectAttributes.addFlashAttribute("linkOnFile", link);
+             logger.info("Guest file was approved! File size: {}MB", $m.getSize()/1000000);
+         } catch (FileUploadException e) {
+             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+             logger.info("FileUploadException", e);
+         }
+end
+
+rule "Authorization user max size 1024MB - rejected"
+    dialect "java"
+    when
+        $u : UserDetailsImpl()
+        $m : MultipartFile(size > 1024000000)
+    then
+        redirectAttributes.addFlashAttribute("errorMessage", "The file is too large! The maximum size is 1024 MB. If you want to send larger files, please upgrade to a premium account");
+        logger.info("AUTHORIZATION User file was rejected! File size: {}MB", $m.getSize()/1000000);
+end
+
+rule "Authorization user max size 1024MB - approve"
+    dialect "java"
+    when
+        $u : UserDetailsImpl()
+        $m : MultipartFile(size <= 1024000000)
+    then
+         try {
+            String link = fileService.saveFile($m);
+
+             redirectAttributes.addFlashAttribute("successMessage", "File uploaded successfully");
+             redirectAttributes.addFlashAttribute("linkOnFile", link);
+             logger.info("AUTHORIZATION User file was approve! File size: {}MB", $m.getSize()/1000000);
+         } catch (FileUploadException e) {
+             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+             logger.info("FileUploadException", e);
+         }
+end
+
+rule "Premium user max size 2024MB - rejected"
+    dialect "java"
+    when
+        $u : UserDetailsImpl(getRole()  == UserRole.ROLE_PREMIUM)
+        $m : MultipartFile(size > 2048000000)
+    then
+        redirectAttributes.addFlashAttribute("errorMessage", "The file is too large! The maximum size is 2024 MB");
+        logger.info("PREMIUM User file was rejected! File size: {}MB", $m.getSize()/1000000);
+end
+
+rule "Premium user max size 2024MB - approve"
+    dialect "java"
+    when
+        $u : UserDetailsImpl(getRole() == UserRole.ROLE_PREMIUM)
+        $m : MultipartFile(size <= 2048000000)
+    then
+         try {
+            String link = fileService.saveFile($m);
+
+             redirectAttributes.addFlashAttribute("successMessage", "File uploaded successfully");
+             redirectAttributes.addFlashAttribute("linkOnFile", link);
+             logger.info("PREMIUM User file was approve! File size: {}MB", $m.getSize()/1000000);
+         } catch (FileUploadException e) {
+             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+             logger.info("FileUploadException", e);
+         }
+end
