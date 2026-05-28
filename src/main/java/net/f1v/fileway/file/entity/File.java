@@ -32,7 +32,7 @@ public class File {
     @Column(name = "file_original_name", nullable = false)
     private String originalName;
 
-    @Column(name = "file_hash", nullable = false)
+    @Column(name = "file_hash", nullable = false, length = 256)
     private String fileHash;
 
     @OneToOne
@@ -49,10 +49,11 @@ public class File {
         createdAt = LocalDateTime.now();
     }
 
-    public File(Long size, String storageName, LocalDateTime createdAt, String originalName, FileLink link) {
+    public File(Long size, String storageName, String fileHash, LocalDateTime createdAt, String originalName, FileLink link) {
         this.size = size;
         this.createdAt = createdAt;
         this.storageName = storageName;
+        this.fileHash = fileHash;
         this.originalName = originalName;
         this.link = link;
     }
