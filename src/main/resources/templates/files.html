@@ -215,7 +215,6 @@
         .file-card__link {
             margin-top: 1rem;
             padding-top: 1rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
         }
 
         .file-card__link-label {
@@ -303,7 +302,9 @@
     <nav class="topbar__nav">
         <a href="/">Upload</a>
         <a href="/my-files">My Files</a>
-        <a href="/logout">Logout</a>
+        <form th:action="@{/logout}" method="post">
+            <a><button type="submit">Logout</button></a>
+        </form>
         <span th:if="${isPremium}" class="user-status premium">Premium - <span th:text="${user.email}"></span></span>
         <span th:unless="${isPremium}" class="user-status">User - <span th:text="${user.email}"></span></span>
     </nav>
@@ -313,10 +314,10 @@
     <div class="page-header">
         <h1>My Files</h1>
         <div class="user-info">
-            <div class="user-info__avatar" th:text="${user.email.charAt(0).toUpperCase()}"></div>
+            <div class="user-info__avatar" th:text="${user.email.charAt(0)}"></div>
             <div class="user-info__details">
                 <div class="user-info__email" th:text="${user.email}"></div>
-                <div class="user-info__role" th:class="${isPremium ? 'user-info__role premium' : 'user-info__role'}">
+                <div class="user-info__role" th:classappend="${isPremium} ? ' premium' : ''">
                     <span th:if="${isPremium}">Premium Member</span>
                     <span th:unless="${isPremium}">Free Member</span>
                 </div>
@@ -343,28 +344,29 @@
                     <div class="file-card__icon">📄</div>
                     <div class="file-card__title">
                         <div class="file-card__name" th:text="${file.originalName}"></div>
-                        <div class="file-card__size" th:text="${#numbers.formatDecimal(file.size / 1024 / 1024, 0, 2)} + ' MB'"></div>
+                        <div class="file-card__size" th:text="${FileSizeFormatter.format(file.size)}"></div>
                     </div>
                 </div>
 
                 <div class="file-card__info">
                     <div class="file-card__info-item">
                         <span class="file-card__info-label">Uploaded</span>
-                        <span class="file-card__info-value" th:text="${#dates.format(file.createdAt, 'dd.MM.yyyy HH:mm')}"></span>
+                        <span class="file-card__info-value"
+                              th:text="${#temporals.format(file.createdAt, 'dd.MM.yyyy HH:mm')}"></span>
                     </div>
                     <div class="file-card__info-item">
                         <span class="file-card__info-label">Status</span>
-                        <span class="file-card__info-value" 
-                              th:class="${file.link.expiresAt > #dates.createNow() ? 'file-card__info-value active' : 'file-card__info-value expired'}"
-                              th:text="${file.link.expiresAt > #dates.createNow() ? 'Active' : 'Expired'}"></span>
+                        <span class="file-card__info-value"
+                              th:classappend="${file.link.expiresAt > T(java.time.LocalDateTime).now()} ? 'active' : 'expired'"
+                              th:text="${file.link.expiresAt > T(java.time.LocalDateTime).now()} ? 'Active' : 'Expired'"></span>
                     </div>
+<!--                    <div class="file-card__info-item">-->
+<!--                        <span class="file-card__info-label">Expires</span>-->
+<!--                        <span class="file-card__info-value" th:text="${#temporals.format(file, 'dd.MM.yyyy HH:mm')}"></span>-->
+<!--                    </div>-->
                     <div class="file-card__info-item">
-                        <span class="file-card__info-label">Expires</span>
-                        <span class="file-card__info-value" th:text="${#dates.format(file.link.expiresAt, 'dd.MM.yyyy HH:mm')}"></span>
-                    </div>
-                    <div class="file-card__info-item">
-                        <span class="file-card__info-label">Downloads</span>
-                        <span class="file-card__info-value" th:text="${file.link.useCount} + ' / ' + ${file.link.maxUses}"></span>
+                        <span class="file-card__info-label">Downloads count</span>
+                        <span class="file-card__info-value" th:text="${file.link.useCount}"></span>
                     </div>
                 </div>
 
@@ -374,6 +376,15 @@
                         <input type="text" class="link-input" th:value="${'http://localhost:8080/download-stream/' + file.link.id}" readonly onclick="this.select()" />
                         <button class="copy-btn" 
                                 th:data-link="${'http://localhost:8080/download-stream/' + file.link.id}"
+                                onclick="copyToClipboard(this)">Copy</button>
+                    </div>
+                </div>
+                <div class="file-card__link">
+                    <label class="file-card__link-label">File SHA-256 Hash</label>
+                    <div class="link-input-group">
+                        <input type="text" class="link-input" th:value="${file.fileHash}" readonly onclick="this.select()" />
+                        <button class="copy-btn"
+                                th:data-link="${file.fileHash}"
                                 onclick="copyToClipboard(this)">Copy</button>
                     </div>
                 </div>

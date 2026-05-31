@@ -25,9 +25,9 @@ CREATE TABLE fileway.file (
                               file_storage_name TEXT NOT NULL,
                               file_created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                               file_original_name TEXT NOT NULL,
-                              file_link_id UUID NOT NULL,
+                              file_link_id UUID ,
                               CONSTRAINT fk_file_link
                                   FOREIGN KEY (file_link_id)
                                       REFERENCES fileway.file_link(file_link_id)
-                                      ON DELETE CASCADE
+                                      ON DELETE SET NULL
 );

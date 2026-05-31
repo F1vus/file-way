@@ -55,7 +55,7 @@ public class FileEncrypterDecrypter {
         return new HashFile(HexFormat.of().formatHex(encodedHash));
     }
 
-    public void decrypt(OutputStream outputStream, FileInputStream fileIn, HashFile hashFile) throws Exception {
+    public void decrypt(OutputStream outputStream, FileInputStream fileIn, HashFile hashFile) throws IOException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException {
         byte[] iv = fileIn.readNBytes(GCM_IV_LENGTH);
         if (iv.length != GCM_IV_LENGTH) {
             throw new IOException("Cannot read IV");
@@ -85,6 +85,7 @@ public class FileEncrypterDecrypter {
             log.info("Database hash file: {}", hashFile.hashFileHex());
 
             if (!actualHashHex.equalsIgnoreCase(hashFile.hashFileHex())) {
+
                 throw new IOException("Invalid hash");
             }
 

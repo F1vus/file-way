@@ -40,6 +40,11 @@ public class FileLink {
     @OneToOne(mappedBy = "link")
     private File file;
 
+    public FileLink(UUID id, LocalDateTime createdAt, LocalDateTime expiresAt, User user) {
+        this(id, createdAt, expiresAt);
+        this.user = user;
+    }
+
     public FileLink(UUID id, LocalDateTime createdAt, LocalDateTime expiresAt) {
         this.id = id;
         this.createdAt = createdAt;

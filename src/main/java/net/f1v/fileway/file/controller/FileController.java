@@ -7,6 +7,7 @@ import net.f1v.fileway.auth.UserDetailsImpl;
 import net.f1v.fileway.file.service.FileService;
 import net.f1v.fileway.user.entity.User;
 import net.f1v.fileway.user.repository.UserRepository;
+import net.f1v.fileway.utils.FileSizeFormatter;
 import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -65,10 +66,16 @@ public class FileController {
     }
 
     @GetMapping("/download-stream/{file_id}")
-    public void downloadFileStream(@PathVariable("file_id") UUID fileLinkId, HttpServletResponse response)  {
+    public void downloadFileStream(@PathVariable("file_id") String fileLinkId, HttpServletResponse response)  {
         response.setContentType("application/octet-stream");
 
-        fileService.streamFile(response, fileLinkId);
+        try {
+            UUID uuid = UUID.fromString(fileLinkId);
+            fileService.streamFile(response, uuid);
+        } catch (IllegalArgumentException e){
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+        }
+
     }
 
     @GetMapping("/my-files")
@@ -80,6 +87,7 @@ public class FileController {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         model.addAttribute("user", user);
         model.addAttribute("isPremium", "ROLE_PREMIUM".equals(user.getRole().name()));
+        model.addAttribute("FileSizeFormatter", FileSizeFormatter.class);
         return "files";
     }
 }

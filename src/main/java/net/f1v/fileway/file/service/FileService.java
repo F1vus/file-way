@@ -3,6 +3,8 @@ package net.f1v.fileway.file.service;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import net.f1v.fileway.auth.UserDetailsImpl;
 import net.f1v.fileway.crypto.FileEncrypterDecrypter;
 import net.f1v.fileway.crypto.model.HashFile;
 import net.f1v.fileway.file.entity.File;
@@ -10,6 +12,8 @@ import net.f1v.fileway.file.entity.FileLink;
 import net.f1v.fileway.file.error.FileUploadException;
 import net.f1v.fileway.file.repository.FileLinkRepository;
 import net.f1v.fileway.file.repository.FileRepository;
+import net.f1v.fileway.user.entity.User;
+import net.f1v.fileway.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -23,9 +27,11 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FileService {
@@ -34,13 +40,18 @@ public class FileService {
     private final FileEncrypterDecrypter fileEncrypterDecrypter;
     private final FileRepository fileRepository;
     private final FileLinkRepository fileLinkRepository;
+    private final UserRepository userRepository;
 
     @Transactional
-    public String saveFile(MultipartFile file) {
+    public String saveFile(MultipartFile file, UserDetailsImpl userDetails) {
         UUID uuid = UUID.randomUUID();
         Path filePath = Paths.get(DATA_PATH + uuid + ".enc");
         HashFile hashFile;
 
+        User user = null;
+        if(userDetails != null) {
+            user = userRepository.findById(userDetails.getId()).orElse(null);
+        }
 
         try (InputStream inputStream = file.getInputStream();
              OutputStream outputStream = Files.newOutputStream(filePath, StandardOpenOption.CREATE_NEW)) {
@@ -55,7 +66,8 @@ public class FileService {
         FileLink fileLink = new FileLink(
                 uuid,
                 LocalDateTime.now(),
-                LocalDateTime.now().plusHours(1)
+                LocalDateTime.now().plusHours(1),
+                user
         );
         fileLinkRepository.save(fileLink);
 
@@ -65,7 +77,8 @@ public class FileService {
                 hashFile.hashFileHex(),
                 LocalDateTime.now(),
                 file.getOriginalFilename(),
-                fileLink
+                fileLink,
+                user
         );
         fileRepository.save(fileEntity);
 
@@ -74,18 +87,31 @@ public class FileService {
 
 
     public void streamFile(HttpServletResponse response, UUID fileLinkId) {
-        FileLink fileLink = fileLinkRepository.findById(fileLinkId).orElseThrow(() -> new RuntimeException(fileLinkId + " not found"));
+        Optional<FileLink> fileLinkOptional = fileLinkRepository.findById(fileLinkId);
+        if (fileLinkOptional.isEmpty()) {
+            log.error("FileLink record does not exist in DATABASE, by UUID: {}", fileLinkId);
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        FileLink fileLink = fileLinkOptional.get();
 
         Path filePath = Paths.get(DATA_PATH + fileLink.getFile().getStorageName());
 
+        if (!Files.exists(filePath)) {
+            log.error("File does not exist, by UUID: {}", fileLinkId);
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
 
         response.setHeader("Content-Disposition", "attachment; filename="+fileLink.getFile().getOriginalName());
 
         HashFile hashFile = new HashFile(fileLink.getFile().getFileHash());
         try (FileInputStream inputStream = new FileInputStream(filePath.toFile())) {
             fileEncrypterDecrypter.decrypt(response.getOutputStream(), inputStream, hashFile);
-        } catch (Exception e) {
-            throw new RuntimeException("Error streaming file", e);
+        } catch (Exception  e) {
+            log.error("Error streaming file, by UUID: {}, error message: {}", fileLinkId, e.getMessage());
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            return;
         }
 
         fileLink.setUseCount(fileLink.getUseCount() + 1);

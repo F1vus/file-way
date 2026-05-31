@@ -46,7 +46,14 @@ public class File {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
+
+    public File(Long size, String storageName, String fileHash, LocalDateTime createdAt, String originalName, FileLink link, User user) {
+        this(size, storageName, fileHash, createdAt, originalName, link);
+        this.user = user;
     }
 
     public File(Long size, String storageName, String fileHash, LocalDateTime createdAt, String originalName, FileLink link) {

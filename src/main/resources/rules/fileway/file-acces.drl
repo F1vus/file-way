@@ -27,7 +27,7 @@ rule "Guest user max size 512MB - approve"
         $m : MultipartFile(size <= 512000000)
     then
          try {
-            String link = fileService.saveFile($m);
+            String link = fileService.saveFile($m, null);
 
              redirectAttributes.addFlashAttribute("successMessage", "File uploaded successfully");
              redirectAttributes.addFlashAttribute("linkOnFile", link);
@@ -55,7 +55,7 @@ rule "Authorization user max size 1024MB - approve"
         $m : MultipartFile(size <= 1024000000)
     then
          try {
-            String link = fileService.saveFile($m);
+            String link = fileService.saveFile($m, $u);
 
              redirectAttributes.addFlashAttribute("successMessage", "File uploaded successfully");
              redirectAttributes.addFlashAttribute("linkOnFile", link);
@@ -83,7 +83,7 @@ rule "Premium user max size 2024MB - approve"
         $m : MultipartFile(size <= 2048000000)
     then
          try {
-            String link = fileService.saveFile($m);
+            String link = fileService.saveFile($m, $u);
 
              redirectAttributes.addFlashAttribute("successMessage", "File uploaded successfully");
              redirectAttributes.addFlashAttribute("linkOnFile", link);
