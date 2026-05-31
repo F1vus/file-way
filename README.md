@@ -56,5 +56,10 @@ If you do not use the Maven wrapper:
 mvn spring-boot:run
 ```
 
+## Test data
+- **Flyway** creates two test users on the first run:
+  - `test_1@gmail.com` with password `password123` and role `ROLE_USER`
+  - `test_2@gmail.com` with password `password123` and role `ROLE_PREMIUM`
+
 The application listens on **http://localhost:8080/** (unless `server.port` is changed).
 
