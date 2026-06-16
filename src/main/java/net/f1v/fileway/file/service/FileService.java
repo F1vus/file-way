@@ -63,13 +63,7 @@ public class FileService {
             throw new FileUploadException("Error saving file");
         }
 
-        FileLink fileLink = new FileLink(
-                uuid,
-                LocalDateTime.now(),
-                LocalDateTime.now().plusHours(1),
-                user
-        );
-        fileLinkRepository.save(fileLink);
+
 
         File fileEntity = new File(
                 file.getSize(),
@@ -77,10 +71,22 @@ public class FileService {
                 hashFile.hashFileHex(),
                 LocalDateTime.now(),
                 file.getOriginalFilename(),
-                fileLink,
                 user
         );
+
         fileRepository.save(fileEntity);
+
+        FileLink fileLink = new FileLink(
+                uuid,
+                LocalDateTime.now(),
+                LocalDateTime.now().plusHours(1),
+                user,
+                fileEntity
+        );
+
+        fileLinkRepository.save(fileLink);
+
+
 
         return "http://localhost:8080/download-stream/" + fileLink.getId();
     }
@@ -116,5 +122,30 @@ public class FileService {
 
         fileLink.setUseCount(fileLink.getUseCount() + 1);
         fileLinkRepository.save(fileLink);
+    }
+
+    public File getFileById(Long fileId) {
+        return fileRepository.findById(fileId)
+                .orElseThrow(() -> new RuntimeException("File not found with id: " + fileId));
+    }
+
+    @Transactional
+    public FileLink createNewLink(File file, int maxUses, int expirationHours) {
+        UUID linkId = UUID.randomUUID();
+        FileLink fileLink = new FileLink(
+                linkId,
+                LocalDateTime.now(),
+                LocalDateTime.now().plusHours(expirationHours),
+                file.getUser(),
+                file
+        );
+        fileLink.setMaxUses(maxUses);
+        fileLink.setFile(file);
+        return fileLinkRepository.save(fileLink);
+    }
+
+    @Transactional
+    public void deleteLink(UUID linkId) {
+        fileLinkRepository.deleteById(linkId);
     }
 }

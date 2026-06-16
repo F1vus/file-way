@@ -41,7 +41,7 @@ end
 rule "Authorization user max size 1024MB - rejected"
     dialect "java"
     when
-        $u : UserDetailsImpl()
+        $u : UserDetailsImpl(getRole() != UserRole.ROLE_PREMIUM)
         $m : MultipartFile(size > 1024000000)
     then
         redirectAttributes.addFlashAttribute("errorMessage", "The file is too large! The maximum size is 1024 MB. If you want to send larger files, please upgrade to a premium account");
@@ -51,7 +51,7 @@ end
 rule "Authorization user max size 1024MB - approve"
     dialect "java"
     when
-        $u : UserDetailsImpl()
+        $u : UserDetailsImpl(getRole() != UserRole.ROLE_PREMIUM)
         $m : MultipartFile(size <= 1024000000)
     then
          try {
@@ -64,6 +64,7 @@ rule "Authorization user max size 1024MB - approve"
              redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
              logger.info("FileUploadException", e);
          }
+
 end
 
 rule "Premium user max size 2024MB - rejected"

@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import net.f1v.fileway.user.entity.User;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -37,12 +39,15 @@ public class FileLink {
     @JoinColumn(name = "user_id")
     private User user;
 
-    @OneToOne(mappedBy = "link")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "file_id")
+    @Fetch(FetchMode.JOIN)
     private File file;
 
-    public FileLink(UUID id, LocalDateTime createdAt, LocalDateTime expiresAt, User user) {
+    public FileLink(UUID id, LocalDateTime createdAt, LocalDateTime expiresAt, User user, File file) {
         this(id, createdAt, expiresAt);
         this.user = user;
+        this.file = file;
     }
 
     public FileLink(UUID id, LocalDateTime createdAt, LocalDateTime expiresAt) {

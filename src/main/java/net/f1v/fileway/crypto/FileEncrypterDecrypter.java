@@ -11,6 +11,8 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.*;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.HexFormat;
 
 
@@ -19,15 +21,17 @@ import java.util.HexFormat;
 public class FileEncrypterDecrypter {
     private static final String ALGORITHM = "AES";
     private static final String TRANSFORMATION = "AES/GCM/NoPadding";
-    private static final String KEY_PATH = "aes.key";
+    private static final String KEY_PATH = "AES_KEY_BASE64";
     private static final int GCM_IV_LENGTH = 12;
     private static final int GCM_TAG_LENGTH = 128;
 
     private final SecretKey secretKey;
     private final SecureRandom secureRandom;
 
-    public FileEncrypterDecrypter() throws IOException {
-        this.secretKey = new SecretKeySpec(readKey(), ALGORITHM);
+    public FileEncrypterDecrypter() {
+        byte[] keyBytes = Base64.getDecoder().decode(System.getenv(KEY_PATH));
+        this.secretKey = new SecretKeySpec(keyBytes, ALGORITHM);
+        Arrays.fill(keyBytes, (byte) 0);
         this.secureRandom = new SecureRandom();
     }
 
@@ -101,7 +105,7 @@ public class FileEncrypterDecrypter {
         return nonce;
     }
 
-    private byte[] readKey() throws IOException {
-        return Files.readAllBytes(Path.of(KEY_PATH));
-    }
+//    private byte[] readKey() throws IOException {
+//        return Files.readAllBytes(Path.of(KEY_PATH));
+//    }
 }

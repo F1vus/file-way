@@ -43,7 +43,7 @@ stored in binary format
 
 1. Start PostgreSQL and ensure the database exists.
 2. Copy or edit `application.properties` so JDBC settings match your DB, if your run **docker-compose.yml** file, don't edit configuration.
-3. Create ```aes.key``` file-key for encryption in project root directory.
+3. Create ```AES_KEY_BASE64``` variable in your .env file for encryption.
 4. From the project root:
 
 ```bash

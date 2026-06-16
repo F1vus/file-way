@@ -7,6 +7,7 @@ import lombok.Setter;
 import net.f1v.fileway.user.entity.User;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 
 @Entity
@@ -35,9 +36,8 @@ public class File {
     @Column(name = "file_hash", nullable = false, length = 256)
     private String fileHash;
 
-    @OneToOne
-    @JoinColumn(name = "file_link_id")
-    private FileLink link;
+    @OneToMany(mappedBy = "file", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FileLink> links;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
@@ -51,17 +51,12 @@ public class File {
         }
     }
 
-    public File(Long size, String storageName, String fileHash, LocalDateTime createdAt, String originalName, FileLink link, User user) {
-        this(size, storageName, fileHash, createdAt, originalName, link);
-        this.user = user;
-    }
-
-    public File(Long size, String storageName, String fileHash, LocalDateTime createdAt, String originalName, FileLink link) {
+    public File(Long size, String storageName, String fileHash, LocalDateTime createdAt, String originalName, User user) {
         this.size = size;
         this.createdAt = createdAt;
         this.storageName = storageName;
         this.fileHash = fileHash;
         this.originalName = originalName;
-        this.link = link;
+        this.user = user;
     }
 }
